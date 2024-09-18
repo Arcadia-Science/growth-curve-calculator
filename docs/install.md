@@ -4,7 +4,7 @@ You could, for example, have a page like this that describes how to install the 
 
 ## Using pip
 
-[PACKAGE-NAME] is hosted on the [Python Package Index (PyPI)](https://pypi.org/project/[PACKAGE_NAME]/) and can be installed with pip.
+growth-curve-calculator is hosted on the [Python Package Index (PyPI)](https://pypi.org/project/growth_curve_calculator/) and can be installed with pip.
 
 ```{eval-rst}
 .. tabs::
@@ -13,17 +13,17 @@ You could, for example, have a page like this that describes how to install the 
 
       .. code-block:: bash
 
-         pip install [PACKAGE-NAME]
+         pip install growth-curve-calculator
 
    .. tab:: **MacOS**
 
       .. code-block:: bash
 
-         pip install [PACKAGE-NAME]
+         pip install growth-curve-calculator
 
    .. tab:: **Windows**
 
       .. code-block:: bash
 
-         pip install [PACKAGE-NAME]
+         pip install growth-curve-calculator
 ```
