@@ -13,40 +13,78 @@ class SpectraMaxXmlParser:
         xml_text = xml_filepath.read_text()
         self.soup = BeautifulSoup(xml_text, features="xml")
 
+        self.plate_names = self._parse_plate_names()
+        self.num_plates = len(self.plate_names)
+
     def to_dict(self):
         """"""
+        instrument_data = {}
+        plate_data = {plate_name: {} for plate_name in self.plate_names}
+        plate_index = 0
 
-    def _parse_plate_name(self):
-        """"""
-        plate_name_data = None
         for row in self.soup.find_all("Row"):
+            row_data = [cell.text for cell in row.find_all("Cell")]
+            # skip empty row
+            if not row_data:
+                continue
+
+            key = row_data[0]
+            if not row_data[1:]:
+                value = ""
+            else:
+                value = row_data[1:] if len(row_data[1:]) > 2 else row_data[1]
+
+            # skip problematic line
+            if "Plate  (" in row.text:
+                continue
+
+            # indicates the start of a new plate --> update plate name
+            if "Plate name" in row.text:
+                plate_name = [cell.text for cell in row.find_all("Cell")][1]
+                plate_index += 1
+
+            if not plate_index:
+                instrument_data[key] = value
+            else:
+                plate_data[plate_name][key] = value
+
+        return {**instrument_data, **plate_data}
+
+    def to_formatted_text(self) -> list[str]:
+        """Return the XML data in a more legible manner.
+
+        Useful for debugging.
+        """
+        lines: list[str] = []
+        for row in self.soup.find_all("Row"):
+            row_contents: list[str] = []
             for cell in row.find_all("Cell"):
-                if "Plate name" in cell.find("Data"):
-                    plate_name_data = [cell.find("Data").text for cell in row.find_all("Cell")]
+                row_contents.append(cell.text)
 
-        if plate_name_data is None:
+            line = " | ".join(row_contents)
+            lines.append(line)
+
+        return lines
+
+    def _parse_plate_names(self) -> list[str]:
+        """"""
+        plate_names: list[str] = []
+        for row in self.soup.find_all("Row"):
+            if "Plate name" in row.text:
+                plate_name = [cell.text for cell in row.find_all("Cell")][1]
+                message = f"Parsed plate name '{plate_name}' from XML file."
+                logger.info(message)
+                plate_names.append(plate_name)
+
+        if not plate_names:
             message = "Could not parse 'Plate name' from XML file."
-            raise ValueError(message)
-        elif len(plate_name_data) < 2:
-            message = "'Plate name' not provided in XML file."
             logger.warning(message)
-            plate_name = ""
-        elif len(plate_name_data) == 2:
-            plate_name = plate_name_data[1]
-            message = f"Parsed '{plate_name}' for 'Plate name' from XML file."
-            logger.info(message)
-        else:
-            message = f"Multiple plate names provided in XML file: {plate_name_data}."
-            raise ValueError(message)
+            plate_names = [""]
 
-        return plate_name
+        return plate_names
 
     def _parse_OD_measurements(self):
         """"""
-
-    def get_organism_name(self):
-        """"""
-        return self._parse_plate_name()
 
     def get_OD_measurements(self):
         """"""
