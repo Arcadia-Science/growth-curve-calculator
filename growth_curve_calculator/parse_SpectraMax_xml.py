@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+from string import ascii_uppercase
 
 from bs4 import BeautifulSoup
 
@@ -15,40 +16,6 @@ class SpectraMaxXmlParser:
 
         self.plate_names = self._parse_plate_names()
         self.num_plates = len(self.plate_names)
-
-    def to_dict(self):
-        """"""
-        instrument_data = {}
-        plate_data = {plate_name: {} for plate_name in self.plate_names}
-        plate_index = 0
-
-        for row in self.soup.find_all("Row"):
-            row_data = [cell.text for cell in row.find_all("Cell")]
-            # skip empty row
-            if not row_data:
-                continue
-
-            key = row_data[0]
-            if not row_data[1:]:
-                value = ""
-            else:
-                value = row_data[1:] if len(row_data[1:]) > 2 else row_data[1]
-
-            # skip problematic line
-            if "Plate  (" in row.text:
-                continue
-
-            # indicates the start of a new plate --> update plate name
-            if "Plate name" in row.text:
-                plate_name = [cell.text for cell in row.find_all("Cell")][1]
-                plate_index += 1
-
-            if not plate_index:
-                instrument_data[key] = value
-            else:
-                plate_data[plate_name][key] = value
-
-        return {**instrument_data, **plate_data}
 
     def to_formatted_text(self) -> list[str]:
         """Return the XML data in a more legible manner.
@@ -83,8 +50,64 @@ class SpectraMaxXmlParser:
 
         return plate_names
 
-    def _parse_OD_measurements(self):
-        """"""
+    def _parse_plate_measurements(self) -> dict[str, list[list[tuple[int, str]]]]:
+        """
 
-    def get_OD_measurements(self):
+        Returns:
+            plate_data_mapping:
+                A mapping of plate names to plate measurements.
+        """
+        plate_data_mapping: dict[str, list[list[tuple[int, str]]]] = {}
+
+        for row in self.soup.find_all("Row"):
+            row_str_data = [cell.text for cell in row.find_all("Cell")]
+            row_str_indices = [cell.attrs.get("ss:Index") for cell in row.find_all("Cell")]
+            # row_int_indices = forward_fill_indices(row_str_indices)
+            row_int_indices = range(len(row_str_indices))
+
+            # indicates the start of a new plate --> update plate name
+            if "Plate name" in row.text:
+                plate_name = [cell.text for cell in row.find_all("Cell")][1]
+                plate_data_mapping[plate_name] = []
+
+            # row of OD measurement data
+            if row_str_data[0] in ascii_uppercase:
+                row_of_indexed_measurements: list[tuple[int, str]] = list(
+                    zip(row_int_indices, row_str_data, strict=True)
+                )
+                plate_data_mapping[plate_name].append(row_of_indexed_measurements)
+
+        return plate_data_mapping
+
+    def get_plate_measurements(self):
         """"""
+        pass
+
+
+# def forward_fill_indices(str_indices: list[str | None]) -> list[int]:
+#     """Forward fill a list of string indices.
+
+#     Args:
+#         str_indices: A list of indices as string representations of integers mixed and None.
+
+#     Returns:
+#         int_indices: A list of indices as integers.
+
+#     Examples:
+#         Standard usage:
+
+#         >>> forward_fill_indices(["5", None, None])
+#         [0, 1, 2]
+#         >>> forward_fill_indices([None, "3", None])
+#         [0, 3, 4]
+#         >>> forward_fill_indices([None, None, None])
+#         [0, 1, 2]
+#     """
+#     int_indices = [0]
+#     for i in str_indices[1:]:
+#         if i is not None:
+#             int_indices.append(int(i))
+#         else:
+#             int_indices.append(int_indices[-1] + 1)
+
+#     return int_indices
