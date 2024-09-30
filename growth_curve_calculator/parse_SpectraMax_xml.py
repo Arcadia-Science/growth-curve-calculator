@@ -14,6 +14,7 @@ class SpectraMaxXmlParser:
 
     Attributes:
         soup:
+        read_times:
         plate_names:
         num_plates:
     """
@@ -22,6 +23,7 @@ class SpectraMaxXmlParser:
         xml_text = xml_filepath.read_text()
         self.soup = BeautifulSoup(xml_text, features="xml")
 
+        self.read_times = self._parse_read_times()
         self.plate_names = self._parse_plate_names()
         self.num_plates = len(self.plate_names)
 
@@ -40,6 +42,22 @@ class SpectraMaxXmlParser:
             lines.append(line)
 
         return lines
+
+    def _parse_read_times(self) -> list[pd.Timestamp]:
+        read_times: list[pd.Timestamp] = []
+        for row in self.soup.find_all("Row"):
+            if "Read Time" in row.text:
+                read_time = [cell.text for cell in row.find_all("Cell")][1]
+                message = f"Parsed timestamp '{read_time}' from XML file."
+                logger.info(message)
+                read_times.append(pd.Timestamp(read_time))
+
+        if not read_times:
+            message = "Could not parse 'Read Time' from XML file."
+            logger.warning(message)
+            read_times = [pd.Timestamp(-1)]
+
+        return read_times
 
     def _parse_plate_names(self) -> list[str]:
         """"""
@@ -81,7 +99,8 @@ class SpectraMaxXmlParser:
             if row_str_data and row_str_data[0] in ascii_uppercase:
                 # convert measurements to float where possible
                 row_float_data = [
-                    float(x) if x.replace(".", "", 1).isdigit() else x for x in row_str_data
+                    float(x) if x.replace(".", "", 1).isdigit() or "E-" in x else x
+                    for x in row_str_data
                 ]
                 # e.g. [(0, D), (1, 0.114), (6, 0.196)]
                 row_of_indexed_measurements: list[tuple[int, str | float]] = list(
@@ -99,7 +118,9 @@ class SpectraMaxXmlParser:
                 # replace "" with NaN
                 value = value if value != "" else np.nan
                 dataframe.loc[i, col_index] = value
-        return dataframe
+        dataframe_reindexed = dataframe.set_index(0).rename_axis(None)  # type: ignore
+        dataframe_filtered = dataframe_reindexed.dropna(how="all") # type: ignore
+        return dataframe_filtered
 
     def get_plate_measurements(self) -> dict[str, pd.DataFrame]:
         """"""
@@ -108,12 +129,11 @@ class SpectraMaxXmlParser:
         for plate_name, plate_data in plate_data_mapping.items():
             dataframe = self._to_dataframe(plate_data)
             plate_measurements[plate_name] = dataframe
-
         return plate_measurements
 
 
 def forward_fill_indices(str_indices: list[str | None]) -> list[int]:
-    """Forward fill a list of string indices.
+    """Forward fill a list of string indices with first index position as 0.
 
     Args:
         str_indices: A list of indices as string representations of integers mixed and None.
