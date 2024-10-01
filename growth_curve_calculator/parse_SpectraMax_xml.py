@@ -10,13 +10,20 @@ logger = logging.getLogger(__name__)
 
 
 class SpectraMaxXmlParser:
-    """
+    """An XML parser for interpreting the output of the SpectraMax iD3 microplate reader.
+
+    The SpectraMax iD3 is a microplate reader designed for detecting and quantifying biological
+    and chemical reactions in multiwell plates. We use it in the lab primarily for optical density
+    (OD) measurements of cell cultures, which can be used as a proxy to measure cell growth.
+    The plate reader outputs OD measurements to an XML file with a not-so-easy-to-read MS Excel
+    schema, which is why this class exists -- it aims to facilitate reading the OD measurements
+    from plates in batch to aid in the downstream analysis and visualization of growth curves.
 
     Attributes:
-        soup:
-        read_times:
-        plate_names:
-        num_plates:
+        soup: A BeautifulSoup object representing the parsed XML file.
+        read_times: A list of timestamps of when the plate measurements were made.
+        plate_names: A list of names of each plate measured.
+        num_plates: The number of plate measurements present in the XML file.
     """
 
     def __init__(self, xml_filepath: Path) -> None:
@@ -28,10 +35,7 @@ class SpectraMaxXmlParser:
         self.num_plates = len(self.plate_names)
 
     def to_formatted_text(self) -> list[str]:
-        """Return the XML data in a more legible manner.
-
-        Useful for debugging.
-        """
+        """Return the XML data in a more legible manner (useful for debugging)."""
         lines: list[str] = []
         for row in self.soup.find_all("Row"):
             row_contents: list[str] = []
@@ -44,6 +48,7 @@ class SpectraMaxXmlParser:
         return lines
 
     def _parse_read_times(self) -> list[pd.Timestamp]:
+        """Parse read times from XML data."""
         read_times: list[pd.Timestamp] = []
         for row in self.soup.find_all("Row"):
             if "Read Time" in row.text:
@@ -60,7 +65,7 @@ class SpectraMaxXmlParser:
         return read_times
 
     def _parse_plate_names(self) -> list[str]:
-        """"""
+        """Parse plate names from XML data."""
         plate_names: list[str] = []
         for row in self.soup.find_all("Row"):
             if "Plate name" in row.text:
@@ -79,9 +84,9 @@ class SpectraMaxXmlParser:
     def _parse_plate_measurements(self) -> dict[str, list[list[tuple[int, str | float]]]]:
         """Parse the XML data for optical density measurements.
 
-        Returns:
-            plate_data_mapping:
-                A mapping of plate names to plate measurements.
+        The output `plate_data_mapping` is a bit wonky. It takes the form of a list of rows
+        in which each item in the row is an optical density measurement (either a float or a
+        string that cannot easily be converted to a float e.g. "C" or "") paired with its index.
         """
         plate_data_mapping: dict[str, list[list[tuple[int, str | float]]]] = {}
 
@@ -111,7 +116,8 @@ class SpectraMaxXmlParser:
         return plate_data_mapping
 
     def _to_dataframe(self, plate_data: list[list[tuple[int, str | float]]]) -> pd.DataFrame:
-        """"""
+        """Converts plate measurements parsed by `_parse_plate_measurements` to a pandas
+        DataFrame."""
         dataframe = pd.DataFrame()
         for i, row in enumerate(plate_data):
             for col_index, value in row:
@@ -119,11 +125,27 @@ class SpectraMaxXmlParser:
                 value = value if value != "" else np.nan
                 dataframe.loc[i, col_index] = value
         dataframe_reindexed = dataframe.set_index(0).rename_axis(None)  # type: ignore
-        dataframe_filtered = dataframe_reindexed.dropna(how="all") # type: ignore
+        dataframe_filtered = dataframe_reindexed.dropna(how="all")  # type: ignore
         return dataframe_filtered
 
     def get_plate_measurements(self) -> dict[str, pd.DataFrame]:
-        """"""
+        """Get optical density measurements from XML file.
+
+        Returns:
+            plate_data_mapping:
+                A mapping of plate names to plate measurements as a pandas DataFrame. Example:
+
+                {
+                    'Phaeo':
+                            1      2      3      4      5      6      7      8      9
+                        A  0.164  0.190  0.438  0.375  0.224  0.241  0.185  0.117  0.111
+                        B  0.173  0.196  0.454  0.339  0.212  0.223  0.206  0.149  0.136,
+                    'Protococcus':
+                            1      2      3      4      5      6      7      8      9
+                        A  0.098  0.067  0.055  0.057  0.199  0.049  0.044  0.033  0.035
+                        B  0.106  0.091  0.055  0.054  0.247  0.047  0.042  0.038  0.045
+                }
+        """
         plate_data_mapping = self._parse_plate_measurements()
         plate_measurements = {}
         for plate_name, plate_data in plate_data_mapping.items():
