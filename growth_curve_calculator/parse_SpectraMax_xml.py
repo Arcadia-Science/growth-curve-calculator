@@ -55,12 +55,12 @@ class SpectraMaxXmlParser:
                 read_time = [cell.text for cell in row.find_all("Cell")][1]
                 message = f"Parsed timestamp '{read_time}' from XML file."
                 logger.info(message)
-                read_times.append(pd.Timestamp(read_time))
+                read_times.append(pd.Timestamp(read_time))  # type: ignore
 
         if not read_times:
             message = "Could not parse 'Read Time' from XML file."
             logger.warning(message)
-            read_times = [pd.Timestamp(-1)]
+            read_times = []  # type: ignore
 
         return read_times
 
