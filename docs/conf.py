@@ -108,7 +108,7 @@ autoclass_content = "class"
 
 autoapi_type = "python"
 autoapi_dirs = ["../growth_curve_calculator"]
-autoapi_options = []
+# autoapi_options = []
 autoapi_keep_files = True
 
 autoapi_ignore = [

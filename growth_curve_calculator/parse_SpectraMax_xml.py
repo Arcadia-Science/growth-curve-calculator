@@ -26,7 +26,8 @@ class SpectraMaxXmlParser:
         num_plates: The number of plate measurements present in the XML file.
     """
 
-    def __init__(self, xml_filepath: Path) -> None:
+    def __init__(self, xml_filepath: Path | str) -> None:
+        xml_filepath = Path(xml_filepath)
         xml_text = xml_filepath.read_text()
         self.soup = BeautifulSoup(xml_text, features="xml")
 
@@ -34,7 +35,7 @@ class SpectraMaxXmlParser:
         self.plate_names = self._parse_plate_names()
         self.num_plates = len(self.plate_names)
 
-    def to_formatted_text(self) -> list[str]:
+    def _to_formatted_text(self) -> list[str]:
         """Return the XML data in a more legible manner (useful for debugging)."""
         lines: list[str] = []
         for row in self.soup.find_all("Row"):
@@ -53,14 +54,11 @@ class SpectraMaxXmlParser:
         for row in self.soup.find_all("Row"):
             if "Read Time" in row.text:
                 read_time = [cell.text for cell in row.find_all("Cell")][1]
-                message = f"Parsed timestamp '{read_time}' from XML file."
-                logger.info(message)
-                read_times.append(pd.Timestamp(read_time))  # type: ignore
+                read_times.append(pd.Timestamp(read_time))
 
         if not read_times:
             message = "Could not parse 'Read Time' from XML file."
             logger.warning(message)
-            read_times = []  # type: ignore
 
         return read_times
 
@@ -70,8 +68,6 @@ class SpectraMaxXmlParser:
         for row in self.soup.find_all("Row"):
             if "Plate name" in row.text:
                 plate_name = [cell.text for cell in row.find_all("Cell")][1]
-                message = f"Parsed plate name '{plate_name}' from XML file."
-                logger.info(message)
                 plate_names.append(plate_name)
 
         if not plate_names:
@@ -125,7 +121,7 @@ class SpectraMaxXmlParser:
                 value = value if value != "" else np.nan
                 dataframe.loc[i, col_index] = value
         dataframe_reindexed = dataframe.set_index(0).rename_axis(None)  # type: ignore
-        dataframe_filtered = dataframe_reindexed.dropna(how="all")  # type: ignore
+        dataframe_filtered = dataframe_reindexed.dropna(axis=0, how="all")  # type: ignore
         return dataframe_filtered
 
     def get_plate_measurements(self) -> dict[str, pd.DataFrame]:
