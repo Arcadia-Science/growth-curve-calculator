@@ -117,11 +117,12 @@ class SpectraMaxXmlParser:
         dataframe = pd.DataFrame()
         for i, row in enumerate(plate_data):
             for col_index, value in row:
-                # replace "" with NaN
-                value = value if value != "" else np.nan
+                # replace "" and "Error" with NaN
+                if value == "" or value == "Error":
+                    value = np.nan
                 dataframe.loc[i, col_index] = value
         dataframe_reindexed = dataframe.set_index(0).rename_axis(None)  # type: ignore
-        dataframe_filtered = dataframe_reindexed.dropna(axis=0, how="all")  # type: ignore
+        dataframe_filtered = dataframe_reindexed.dropna(axis=1, how="all").dropna(axis=0, how="all")  # type: ignore
         return dataframe_filtered
 
     def get_plate_measurements(self) -> dict[str, pd.DataFrame]:
