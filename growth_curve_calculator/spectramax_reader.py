@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -37,19 +38,12 @@ class SpectraMaxData:
         return len(self.plate_names)
 
     @classmethod
-    def from_xml(cls, xml_filepath: Path | str) -> "SpectraMaxData":
+    def from_xml(cls, xml_filepath: Path | str) -> SpectraMaxData:
         return SpectraMaxXmlParser(xml_filepath).parse()
 
 
 class SpectraMaxXmlParser:
     """An XML parser for interpreting the output of the SpectraMax iD3 microplate reader.
-
-    The SpectraMax iD3 is a microplate reader designed for detecting and quantifying biological
-    and chemical reactions in multiwell plates. We use it in the lab primarily for optical density
-    (OD) measurements of cell cultures, which can be used as a proxy to measure cell growth.
-    The plate reader outputs OD measurements to an XML file with a not-so-easy-to-read MS Excel
-    schema, which is why this class exists -- it aims to facilitate reading the OD measurements
-    from plates in batch to aid in the downstream analysis and visualization of growth curves.
 
     Attributes:
         soup: A BeautifulSoup object representing the parsed XML file.
