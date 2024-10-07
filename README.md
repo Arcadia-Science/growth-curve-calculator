@@ -23,31 +23,35 @@ pip install growth-curve-calculator
 
 Read a SpectraMax XML file:
 ```python
-from growth_curve_calculator.parse_SpectraMax_xml import SpectraMaxXmlParser
+from growth_curve_calculator import SpectraMaxData
 
-plate_reader = SpectraMaxXmlParser("some_SpectraMax_file.xml")
+xml_filepath = (
+    "../../growth_curve_calculator/tests/example_data/"
+    "Public_New ABS Protocol9_6_2024 10_54_51 PM_9_6_2024 10_53_28 PM.xml"
+)
+plate_reader = SpectraMaxData.from_xml(xml_filepath)
 ```
 
 Example output:
 ```python
 # get the names of each plate measured
 >>> plate_reader.plate_names
-['Phaeo', 'Protococcus', 'Tetraselmis']
+['Phaeo', 'Isochrysis', 'Tetraselmis', 'Dunaliella']
 
 # get the times at which each plate was measured
 >>> plate_reader.read_times
-[Timestamp('2024-08-22 19:50:34'),  # Phaeo
- Timestamp('2024-08-22 19:52:59'),  # Protococcus
- Timestamp('2024-08-22 19:52:59')]  # Tetraselmis
+[Timestamp('2024-09-06 22:47:13'),  # Phaeo
+ Timestamp('2024-09-06 22:49:53'),  # Isochrysis
+ Timestamp('2024-09-06 22:51:40'),  # Tetraselmis
+ Timestamp('2024-09-06 22:53:41')]  # Dunaliella
 
 # get the optical density measurements of a plate as a pandas DataFrame
->>> plate_measurements = plate_reader.get_plate_measurements()
->>> plate_measurements["Tetraselmis"]
-       1      2      3      4      5      6      7      8      9
-A  0.061  0.077  0.054  0.058  0.098  0.085  0.074  0.109  0.142
-B  0.075  0.074  0.058  0.057  0.106  0.082  0.067  0.060  0.146
-C  0.092  0.092  0.055  0.062  0.093  0.092  0.064  0.069  0.156
-D  0.161  0.183  0.070  0.078  0.112  0.136  0.120  0.178  0.109
+>>> plate_reader.plate_measurements["Dunaliella"]
+       1      2      3      4
+A  0.411  0.351  0.366  0.400
+B  0.320  0.326  0.372  0.311
+C  0.438  0.347    NaN  0.355
+D  0.331  0.473  0.931  0.758
 ```
 
 ## Contributing
