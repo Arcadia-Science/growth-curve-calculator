@@ -1,21 +1,60 @@
-# Python package template
+# growth-curve-calculator
 
-This repo is a template for Python packages. It uses `poetry` for dependency management and packaging, `ruff` for formatting, `pyright` for type-checking, `pytest` for testing, and sphinx for documentation.
+This repo contains a Python package called `growth_curve_calculator`, the main purpose of which is to facilitate visualizing growth curves of cell cultures from optical density measurements.
+
+Currently only supports parsing optical density measurements from the SpectraMax iD3.
+
+## Installation
+
+Clone the repository and install via pip:
+```bash
+git clone https://github.com/Arcadia-Science/growth-curve-calculator.git
+cd growth-curve-calculator
+pip install -e .
+```
+
+<!-- The package is hosted on PyPI and can be installed using pip:
+
+```bash
+pip install growth-curve-calculator
+``` -->
 
 ## Usage
 
-1. Create a new repo using this template on GitHub by clicking the "Use this template" button at the top of the page.
+Read a SpectraMax XML file:
+```python
+from growth_curve_calculator import SpectraMaxData
 
-1. Clone the new repo and replace the placeholders from the template with the appropriate values for your new project. All placeholders are in all caps and are delimited by square brackets. To find all of the placeholders, you can use the following command:
+xml_filepath = (
+    "growth_curve_calculator/tests/example_data/"
+    "Public_New ABS Protocol9_6_2024 10_54_51 PM_9_6_2024 10_53_28 PM.xml"
+)
+plate_reader = SpectraMaxData.from_xml(xml_filepath)
+```
 
-    ```bash
-    git grep "\[[A-Z _-]\{2,\}\]"
-    ```
+Example output:
+```python
+# get the names of each plate measured
+>>> plate_reader.plate_names
+['Phaeo', 'Isochrysis', 'Tetraselmis', 'Dunaliella']
 
-    Alternatively, in VS Code, you can use the "Find in Files" feature with the following regex pattern: `\[([A-Z _-]{2,})\]`.
+# get the times at which each plate was measured
+>>> plate_reader.read_times
+[Timestamp('2024-09-06 22:47:13'),  # Phaeo
+ Timestamp('2024-09-06 22:49:53'),  # Isochrysis
+ Timestamp('2024-09-06 22:51:40'),  # Tetraselmis
+ Timestamp('2024-09-06 22:53:41')]  # Dunaliella
 
-1. Follow the instructions in the `README_TEMPLATE.md` file to set up a development environment.
+# get the optical density measurements of a plate as a pandas DataFrame
+>>> plate_reader.plate_measurements["Dunaliella"]
+       1      2      3      4
+A  0.411  0.351  0.366  0.400
+B  0.320  0.326  0.372  0.311
+C  0.438  0.347    NaN  0.355
+D  0.331  0.473  0.931  0.758
+```
 
-1. Enable the GitHub Actions workflow that runs the tests by opening `.github/workflows/test.yml` and deleting the line `if: false`.
+## Contributing
 
-1. Finally, delete this `README.md` file and rename the `README_TEMPLATE.md` file to `README.md`.
+If you are interested in contributing to this package, please check out the [developer notes](docs/development.md).
+See how we recognize [feedback and contributions to our code](https://github.com/Arcadia-Science/arcadia-software-handbook/blob/main/guides-and-standards/guide-credit-for-contributions.md).

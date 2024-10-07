@@ -13,18 +13,18 @@ style = "pep440"
 dirty = true
 
 [tool.poetry]
-name = "[PACKAGE_NAME]"
+name = "growth_curve_calculator"
 # This version is a placeholder. It will be updated at build time by poetry-dynamic-versioning
 # from the latest git tag.
 version = "0.0.0"
-description = "[DESCRIPTION OF THE PACKAGE]"
-authors = ["[FIRST] [LAST] <[EMAIL]>"]
+description = "Small package for generating growth curves of cell cultures from optical density measurements."
+authors = ["Ryan Lane <ryan.lane@arcadiascience.com>"]
 readme = "README.md"
 license = "MIT"
-packages = [{ include = "[PACKAGE_NAME]" }]
-homepage = "https://github.com/Arcadia-Science/[PACKAGE-NAME]"
-repository = "https://github.com/Arcadia-Science/[PACKAGE-NAME]"
-documentation = "https://github.com/Arcadia-Science/[PACKAGE-NAME]/blob/main/README.md"
+packages = [{ include = "growth_curve_calculator" }]
+homepage = "https://github.com/Arcadia-Science/growth-curve-calculator"
+repository = "https://github.com/Arcadia-Science/growth-curve-calculator"
+documentation = "https://github.com/Arcadia-Science/growth-curve-calculator/blob/main/README.md"
 
 [[tool.poetry.source]]
 name = "pypi"
@@ -36,7 +36,12 @@ name = "pypi_test"
 url = "https://test.pypi.org/legacy/"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<4.0"
+python = ">=3.10,<4.0"
+numpy = ">= 2.0.0"
+lxml = "^5.3.0"
+pandas = "^2.2.3"
+pandas-stubs = "^2.2.2.240909"
+bs4 = "^0.0.2"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "3.5.0"
