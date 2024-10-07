@@ -1,5 +1,5 @@
-from growth_curve_calculator.parse_spectramax_xml import SpectraMaxXmlParser
+from growth_curve_calculator.parse_spectramax_xml import SpectraMaxData
 
 __all__ = [
-    "SpectraMaxXmlParser",
+    "SpectraMaxData",
 ]

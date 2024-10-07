@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from string import ascii_uppercase
 
@@ -7,6 +8,37 @@ import pandas as pd
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class SpectraMaxData:
+    """A dataclass for SpectraMax iD3 microplate reader data.
+
+    The SpectraMax iD3 is a microplate reader designed for detecting and quantifying biological
+    and chemical reactions in multiwell plates. We use it in the lab primarily for optical density
+    (OD) measurements of cell cultures, which can be used as a proxy to measure cell growth.
+    The plate reader outputs OD measurements to an XML file with a not-so-easy-to-read MS Excel
+    schema, which is why this class exists -- it aims to facilitate reading the OD measurements
+    from plates in batch to aid in the downstream analysis and visualization of growth curves.
+
+    Attributes:
+        read_times: A list of timestamps of when the plate measurements were made.
+        plate_names: A list of names of each plate measured.
+        plate_measurements: A mapping of plate names to dataframes of optical density measurements.
+        num_plates: The number of plate measurements present in the XML file.
+    """
+
+    read_times: list[pd.Timestamp]
+    plate_names: list[str]
+    plate_measurements: dict[str, pd.DataFrame]
+
+    @property
+    def num_plates(self) -> int:
+        return len(self.plate_names)
+
+    @classmethod
+    def from_xml(cls, xml_filepath: Path | str) -> "SpectraMaxData":
+        return SpectraMaxXmlParser(xml_filepath).parse()
 
 
 class SpectraMaxXmlParser:
@@ -21,9 +53,6 @@ class SpectraMaxXmlParser:
 
     Attributes:
         soup: A BeautifulSoup object representing the parsed XML file.
-        read_times: A list of timestamps of when the plate measurements were made.
-        plate_names: A list of names of each plate measured.
-        num_plates: The number of plate measurements present in the XML file.
     """
 
     def __init__(self, xml_filepath: Path | str) -> None:
@@ -31,9 +60,12 @@ class SpectraMaxXmlParser:
         xml_text = xml_filepath.read_text()
         self.soup = BeautifulSoup(xml_text, features="xml")
 
-        self.read_times = self._parse_read_times()
-        self.plate_names = self._parse_plate_names()
-        self.num_plates = len(self.plate_names)
+    def parse(self) -> SpectraMaxData:
+        return SpectraMaxData(
+            read_times=self._parse_read_times(),
+            plate_names=self._parse_plate_names(),
+            plate_measurements=self.get_plate_measurements(),
+        )
 
     def _to_formatted_text(self) -> list[str]:
         """Return the XML data in a more legible manner (useful for debugging)."""
