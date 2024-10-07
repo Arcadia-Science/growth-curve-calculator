@@ -26,7 +26,7 @@ Read a SpectraMax XML file:
 from growth_curve_calculator import SpectraMaxData
 
 xml_filepath = (
-    "../../growth_curve_calculator/tests/example_data/"
+    "growth_curve_calculator/tests/example_data/"
     "Public_New ABS Protocol9_6_2024 10_54_51 PM_9_6_2024 10_53_28 PM.xml"
 )
 plate_reader = SpectraMaxData.from_xml(xml_filepath)
