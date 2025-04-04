@@ -1,5 +1,8 @@
-from growth_curve_calculator.spectramax_reader import SpectraMaxData
+from growth_curve_calculator.microplate import MicroplateData, Well
+from growth_curve_calculator.spectramax import SpectraMaxXmlParser
 
 __all__ = [
-    "SpectraMaxData",
+    "MicroplateData",
+    "Well",
+    "SpectraMaxXmlParser",
 ]
