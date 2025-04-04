@@ -85,23 +85,54 @@ class SpectraMaxXmlParser:
     def num_plates(self) -> int:
         return len(self.plate_names)
 
-    def parse(self) -> list[MicroplateData]:
+    def parse(
+        self, plate_names: str | list[str] | None = None
+    ) -> MicroplateData | list[MicroplateData]:
         """Parse the XML file and return a list of MicroplateData objects.
 
         This is the main entry point for parsing SpectraMax XML files. It processes the XML file
-        and extracts all plate measurements, converting them to MicroplateData objects containing
+        and extracts plate measurements, converting them to MicroplateData objects containing
         structured data that can be easily analyzed.
 
-        Returns:
-            A list of MicroplateData objects representing all plate measurements found in the XML
-            file, with each object containing the parsed data for a single plate measurement
-            including metadata and well measurements.
+        Args:
+            plate_names: Optional name or list of names of specific plates to parse.
+                - If None, all plates will be parsed.
+                - If a string, only the matching plate will be returned.
+                - If a list of strings, only the matching plates will be returned.
 
-        Example:
+        Returns:
+            A list of MicroplateData objects representing the parsed plate measurements found in
+            the XML file. If plate_names is provided, the list will contain only the matching
+            plate(s) or be empty if no matches are found.
+
+        Examples:
             >>> parser = SpectraMaxXmlParser("plate_data.xml")
-            >>> microplate_data_list = parser.parse()
+            >>> # Parse all plates
+            >>> all_plates = parser.parse()
+            >>> # Parse just one specific plate
+            >>> phaeo_plate = parser.parse(plate_names="Phaeo")
+            >>> # Parse multiple specific plates
+            >>> selected_plates = parser.parse(plate_names=["Phaeo", "Chlamy"])
         """
-        return list(self.generate_plate_measurements())
+        if plate_names is None:
+            # Parse all plates
+            return list(self.generate_plate_measurements())
+        else:
+            # Normalize input to a list
+            plate_names = [plate_names] if isinstance(plate_names, str) else plate_names
+
+            # Parse only the specified plates
+            matching_plates: list[MicroplateData] = []
+            for plate_data in self.generate_plate_measurements():
+                if plate_data.name in plate_names:
+                    matching_plates.append(plate_data)
+
+            if not matching_plates:
+                raise ValueError(f"No plate names matching {plate_names} were found.")
+            elif len(matching_plates) == 1:
+                return matching_plates[0]
+            else:
+                return matching_plates
 
     def generate_plate_measurements(self) -> Generator[MicroplateData, None, None]:
         """Generate MicroplateData objects from the XML file.
@@ -429,18 +460,3 @@ class SpectraMaxXmlParser:
         # TODO: Should be a similar approach as in `_parse_spectrum_scan_measurements`
         #       but need a sample XML file to figure out the schema
         raise NotImplementedError("Unable to parse measurement type 'Kinetc' from plate reader.")
-
-
-def get_microplate_data_by_name(xml_filepath, plate_name):
-    """Get a MicroplateData object from a SpectraMax XML file by name.
-
-    This is a utility function to get a specific MicroplateData object from a SpectraMax XML file.
-    Most, if not all, test SpectraMax XML files contain multiple plate reads (usually a mix of
-    measurement modes and types), but often you just want to analyze the data from a single plate
-    read. This function facilitates that task.
-    """
-    parser = SpectraMaxXmlParser(xml_filepath)
-    for plate_data in parser.generate_plate_measurements():
-        if plate_data.name == plate_name:
-            return plate_data
-    raise ValueError(f"Plate {plate_name} not found in {xml_filepath}.")
