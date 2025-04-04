@@ -1,7 +1,6 @@
 import numpy as np
-import pytest
 
-from ..spectramax import SpectraMaxXmlParser, get_microplate_data_by_name
+from ..spectramax import SpectraMaxXmlParser
 
 
 def test_plate_names_sample_endpoints_1(valid_endpoint_xml_filepath_1):
@@ -50,38 +49,15 @@ def test_plate_names_sample_spectrum_scans(valid_spectrum_scan_xml_filepath):
     assert known_plate_names == parsed_plate_names
 
 
-@pytest.fixture
-def valid_absorption_endpoint_plate_data(valid_endpoint_xml_filepath_1):
-    return get_microplate_data_by_name(valid_endpoint_xml_filepath_1, "Chlamy")
-
-
-@pytest.fixture
-def valid_fluorescence_endpoint_plate_data(valid_spectrum_scan_xml_filepath):
-    return get_microplate_data_by_name(valid_spectrum_scan_xml_filepath, "day3pla2")
-
-
-@pytest.fixture
-def valid_kinetic_plate_data(valid_kinetic_xml_filepath):
-    return get_microplate_data_by_name(valid_kinetic_xml_filepath, "Plate 2")
-
-
-@pytest.fixture
-def valid_excitation_spectrum_scan_plate_data(valid_spectrum_scan_xml_filepath):
-    return get_microplate_data_by_name(valid_spectrum_scan_xml_filepath, "day7pla1EX")
-
-
-@pytest.fixture
-def valid_emission_spectrum_scan_plate_data(valid_spectrum_scan_xml_filepath):
-    return get_microplate_data_by_name(valid_spectrum_scan_xml_filepath, "day7pla1EM")
-
-
-def test_absorption_endpoint_plate_data(valid_absorption_endpoint_plate_data):
-    parsed_measurements = valid_absorption_endpoint_plate_data.measurements  # type: ignore
+def test_absorption_endpoint_plate_data(valid_endpoint_xml_filepath_1):
+    parser = SpectraMaxXmlParser(valid_endpoint_xml_filepath_1)
+    plate_data = parser.parse("Chlamy")
+    parsed_measurements = plate_data.measurements  # type: ignore
 
     # Test that parsed excitation wavelength is correct
     known_excitation_wavelength_nm = 750
     parsed_excitation_wavelength_nm = parsed_measurements["excitation_nm"].squeeze()  # type: ignore
-    np.testing.assert_allclose(parsed_excitation_wavelength_nm, known_excitation_wavelength_nm)
+    np.testing.assert_allclose(parsed_excitation_wavelength_nm, known_excitation_wavelength_nm)  # type: ignore
 
     # Test that parsed measurement values are correct
     known_values = {
@@ -92,11 +68,13 @@ def test_absorption_endpoint_plate_data(valid_absorption_endpoint_plate_data):
         lambda row: row["well_id"] in known_values, axis=1
     )
     parsed_values = parsed_measurements.loc[mask, "value"].values  # type: ignore
-    np.testing.assert_allclose(parsed_values, list(known_values.values()))
+    np.testing.assert_allclose(parsed_values, list(known_values.values()))  # type: ignore
 
 
-def test_fluorescence_endpoint_plate_data(valid_fluorescence_endpoint_plate_data):
-    parsed_measurements = valid_fluorescence_endpoint_plate_data.measurements  # type: ignore
+def test_fluorescence_endpoint_plate_data(valid_spectrum_scan_xml_filepath):
+    parser = SpectraMaxXmlParser(valid_spectrum_scan_xml_filepath)
+    plate_data = parser.parse("day3pla2")
+    parsed_measurements = plate_data.measurements  # type: ignore
 
     # Test that parsed wavelengths are correct
     known_excitation_wavelengths_nm = [485, 561]
@@ -120,11 +98,13 @@ def test_fluorescence_endpoint_plate_data(valid_fluorescence_endpoint_plate_data
         lambda row: (row["well_id"], row["excitation_nm"]) in known_values, axis=1
     )
     parsed_values = parsed_measurements.loc[mask, "value"].values  # type: ignore
-    np.testing.assert_allclose(parsed_values, list(known_values.values()))
+    np.testing.assert_allclose(parsed_values, list(known_values.values()))  # type: ignore
 
 
-def test_excitation_spectrum_scan_plate_data(valid_excitation_spectrum_scan_plate_data):
-    parsed_measurements = valid_excitation_spectrum_scan_plate_data.measurements  # type: ignore
+def test_excitation_spectrum_scan_plate_data(valid_spectrum_scan_xml_filepath):
+    parser = SpectraMaxXmlParser(valid_spectrum_scan_xml_filepath)
+    plate_data = parser.parse("day7pla1EX")
+    parsed_measurements = plate_data.measurements  # type: ignore
 
     # Test that parsed excitation wavelengths are correct
     known_excitation_wavelengths_nm = np.arange(350, 520 + 1, 10)
@@ -146,11 +126,13 @@ def test_excitation_spectrum_scan_plate_data(valid_excitation_spectrum_scan_plat
         lambda row: (row["well_id"], row["excitation_nm"]) in known_values, axis=1
     )
     parsed_values = parsed_measurements.loc[mask, "value"].values  # type: ignore
-    np.testing.assert_allclose(parsed_values, list(known_values.values()))
+    np.testing.assert_allclose(parsed_values, list(known_values.values()))  # type: ignore
 
 
-def test_emission_spectrum_scan_plate_data(valid_emission_spectrum_scan_plate_data):
-    parsed_measurements = valid_emission_spectrum_scan_plate_data.measurements  # type: ignore
+def test_emission_spectrum_scan_plate_data(valid_spectrum_scan_xml_filepath):
+    parser = SpectraMaxXmlParser(valid_spectrum_scan_xml_filepath)
+    plate_data = parser.parse("day7pla1EM")
+    parsed_measurements = plate_data.measurements  # type: ignore
 
     # Test that parsed emission wavelengths are correct
     known_emission_wavelengths_nm = np.arange(480, 650 + 1, 10)
@@ -172,4 +154,4 @@ def test_emission_spectrum_scan_plate_data(valid_emission_spectrum_scan_plate_da
         lambda row: (row["well_id"], row["emission_nm"]) in known_values, axis=1
     )
     parsed_values = parsed_measurements.loc[mask, "value"].values  # type: ignore
-    np.testing.assert_allclose(parsed_values, list(known_values.values()))
+    np.testing.assert_allclose(parsed_values, list(known_values.values()))  # type: ignore
