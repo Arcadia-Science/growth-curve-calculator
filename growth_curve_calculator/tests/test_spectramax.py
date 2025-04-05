@@ -49,6 +49,17 @@ def test_plate_names_sample_spectrum_scans(valid_spectrum_scan_xml_filepath):
     assert known_plate_names == parsed_plate_names
 
 
+def test_plate_names_kinetic_scans(valid_kinetic_xml_filepath):
+    known_plate_names = [
+        "Plate 1",
+        "Plate 2",
+        "Plate 3",
+    ]
+    parser = SpectraMaxXmlParser(valid_kinetic_xml_filepath)
+    parsed_plate_names = parser.plate_names
+    assert known_plate_names == parsed_plate_names
+
+
 def test_absorption_endpoint_plate_data(valid_endpoint_xml_filepath_1):
     parser = SpectraMaxXmlParser(valid_endpoint_xml_filepath_1)
     plate_data = parser.parse("Chlamy")
@@ -61,8 +72,14 @@ def test_absorption_endpoint_plate_data(valid_endpoint_xml_filepath_1):
 
     # Test that parsed measurement values are correct
     known_values = {
-        "A06": 0.05,
-        "H09": 0.605,
+        "A05": 0.05,
+        "A06": 0.04,
+        "A07": 0.042,
+        "A08": 1.063,
+        "H05": 0.652,
+        "H06": 0.672,
+        "H07": 0.047,
+        "H08": 0.605,
     }
     mask = parsed_measurements.apply(  # type: ignore
         lambda row: row["well_id"] in known_values, axis=1
@@ -87,12 +104,19 @@ def test_fluorescence_endpoint_plate_data(valid_spectrum_scan_xml_filepath):
 
     # Test that parsed measurement values are correct
     known_values = {
-        # ("A01", 485): 3322534,
-        ("A02", 485): 3322534,
-        # ("D06", 485): 545762,
-        # ("A01", 561): 16699718,
-        ("A02", 561): 16699718,
-        # ("D06", 561): 18477,
+        ("A01", 485): 3322534,
+        ("A02", 485): 3196558,
+        ("A03", 485): 3059612,
+        ("A04", 485): 15433570,
+        ("A05", 485): 6815924,
+        ("A12", 485): 32490,
+        ("B06", 485): 2002642,
+        ("C10", 485): 9961085,
+        ("D06", 485): 545762,
+        ("A01", 561): 16699718,
+        ("A02", 561): 16667887,
+        ("A03", 561): 15063722,
+        ("A12", 561): 3672,
     }
     mask = parsed_measurements.apply(  # type: ignore
         lambda row: (row["well_id"], row["excitation_nm"]) in known_values, axis=1
@@ -136,7 +160,7 @@ def test_emission_spectrum_scan_plate_data(valid_spectrum_scan_xml_filepath):
 
     # Test that parsed emission wavelengths are correct
     known_emission_wavelengths_nm = np.arange(480, 650 + 1, 10)
-    parsed_emission_wavelengths_nm = parsed_measurements["emission_nm"].unique().tolist()  # type: ignore
+    parsed_emission_wavelengths_nm = parsed_measurements["emission_nm"].unique()  # type: ignore
     np.testing.assert_allclose(parsed_emission_wavelengths_nm, known_emission_wavelengths_nm)
 
     # Test that parsed measurement values are correct
@@ -152,6 +176,36 @@ def test_emission_spectrum_scan_plate_data(valid_spectrum_scan_xml_filepath):
     }
     mask = parsed_measurements.apply(  # type: ignore
         lambda row: (row["well_id"], row["emission_nm"]) in known_values, axis=1
+    )
+    parsed_values = parsed_measurements.loc[mask, "value"].values  # type: ignore
+    np.testing.assert_allclose(parsed_values, list(known_values.values()))  # type: ignore
+
+
+def test_absorption_kinetic_plate_data(valid_kinetic_xml_filepath):
+    parser = SpectraMaxXmlParser(valid_kinetic_xml_filepath)
+    plate_data = parser.parse("Plate 2")
+    parsed_measurements = plate_data.measurements  # type: ignore
+
+    # Test that parsed time points are correct
+    known_time_points_s = np.arange(0, 180 + 1, 30)
+    parsed_time_points_s = parsed_measurements["time_s"].unique()  # type: ignore
+    np.testing.assert_allclose(parsed_time_points_s, known_time_points_s)
+
+    # Test that parsed measurement values are correct
+    known_values = {
+        ("D01", 0): 0.057,
+        ("D02", 0): 0.059,
+        ("D03", 0): 0.061,
+        ("D04", 0): 0.064,
+        ("D05", 0): 0.065,
+        ("H08", 180): 0.052,
+        ("H09", 180): 0.051,
+        ("H10", 180): 0.053,
+        ("H11", 180): 0.051,
+        ("H12", 180): 0.051,
+    }
+    mask = parsed_measurements.apply(  # type: ignore
+        lambda row: (row["well_id"], row["time_s"]) in known_values, axis=1
     )
     parsed_values = parsed_measurements.loc[mask, "value"].values  # type: ignore
     np.testing.assert_allclose(parsed_values, list(known_values.values()))  # type: ignore

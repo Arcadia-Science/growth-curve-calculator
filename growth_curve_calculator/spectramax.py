@@ -305,6 +305,12 @@ class SpectraMaxXmlParser:
                 metadata,
                 plate_type,
             )
+        elif measurement_type == "Kinetic":
+            dataframe = self._parse_kinetic_measurements(
+                plate_measurements_xml_rows,
+                metadata,
+                plate_type,
+            )
         else:
             raise ValueError(f"Unknown measurement type: {measurement_type}.")
 
@@ -332,9 +338,9 @@ class SpectraMaxXmlParser:
             A pandas DataFrame with columns for well IDs, measurement values, and excitation and
             emission wavelengths.
         """
-        plate_measurements: list[dict[str, Any]] = []
+        plate_measurements: list[dict[str, int | float | str]] = []
         for xml_row in plate_measurements_xml_rows:
-            # Align xml data with indices -- tricky because there are no delimiters to rely on
+            # Align xml data with indices
             row_str_data = [re.sub("\n", "", cell.text) for cell in xml_row.find_all("Cell")]
             row_str_indices = [cell.attrs.get("ss:Index") for cell in xml_row.find_all("Cell")]
             start = int(row_str_indices[0]) if row_str_indices[0] is not None else 0
@@ -345,9 +351,9 @@ class SpectraMaxXmlParser:
             if "Wavelength(Ex/Em)" in row_str_data:
                 # Create mapping of {index position: well ID column}
                 index_to_well_column: dict[int, int] = {}
-                for i, well_column in zip(row_int_indices, row_str_data):
+                for i, well_column in zip(row_int_indices, row_str_data, strict=True):
                     try:  # not all data in this row is a well column
-                        index_to_well_column[i] = int(well_column)
+                        index_to_well_column[i + 1] = int(well_column)
                     except ValueError:
                         continue
 
@@ -364,8 +370,8 @@ class SpectraMaxXmlParser:
 
             # First value in subsequent rows of xml is the well ID row
             well_row = row_str_data[0]
-            # Iterate through the index and value of each item in the row
-            for i, value in zip(row_int_indices, row_str_data):
+            # Iterate through the index and value of each item in the row after the well row
+            for i, value in zip(row_int_indices[1:], row_str_data[1:], strict=True):
                 well_column = index_to_well_column.get(i)
                 if well_column is not None:
                     well = Well(well_row, well_column, plate_type)
@@ -414,8 +420,8 @@ class SpectraMaxXmlParser:
         # Parse measurements
         plate_measurements: list[dict[str, int | float | str]] = []
         for xml_row in plate_measurements_xml_rows:
-            # Align xml data with indices -- tricky because there are no delimiters to rely on
-            row_str_data = [cell.text for cell in xml_row.find_all("Cell")]
+            # Align xml data with indices
+            row_str_data = [re.sub("\n", "", cell.text) for cell in xml_row.find_all("Cell")]
             row_str_indices = [cell.attrs.get("ss:Index") for cell in xml_row.find_all("Cell")]
             start = int(row_str_indices[0]) if row_str_indices[0] is not None else 0
             row_int_indices = forward_fill_indices(row_str_indices, start=start)
@@ -457,6 +463,40 @@ class SpectraMaxXmlParser:
         plate_type: PlateType,
     ) -> pd.DataFrame:  # type: ignore
         """"""
-        # TODO: Should be a similar approach as in `_parse_spectrum_scan_measurements`
-        #       but need a sample XML file to figure out the schema
-        raise NotImplementedError("Unable to parse measurement type 'Kinetc' from plate reader.")
+        # Parse measurements
+        plate_measurements: list[dict[str, int | float | str]] = []
+        for xml_row in plate_measurements_xml_rows:
+            # Align xml data with indices
+            row_str_data = [re.sub("\n", "", cell.text) for cell in xml_row.find_all("Cell")]
+            row_str_indices = [cell.attrs.get("ss:Index") for cell in xml_row.find_all("Cell")]
+            start = int(row_str_indices[0]) if row_str_indices[0] is not None else 0
+            row_int_indices = forward_fill_indices(row_str_indices, start=start)
+
+            # "Cycle(Seconds)/Well" indicates header row containing well IDs
+            if "Cycle(Seconds)/Well" in row_str_data:
+                # Create mapping of {index position: well ID}
+                index_to_well: dict[int, Well] = {}
+                for i, well_id in zip(row_int_indices, row_str_data):
+                    try:  # not all data in this row is a well column
+                        well = Well.from_string(well_id, plate_type)
+                        index_to_well[i] = well
+                    except ValueError:
+                        continue
+                continue
+
+            # First value in subsequent rows is the time (in seconds)
+            time_s = float(row_str_data[0])
+            # Iterate through the index and value of each item in the row
+            for i, value in zip(row_int_indices, row_str_data):
+                well = index_to_well.get(i)
+                if well is not None:
+                    row_dict = {
+                        "well_row": well.row,
+                        "well_column": well.column,
+                        "well_id": str(well),
+                        "value": value_to_float(value),
+                        "time_s": time_s,
+                    }
+                    plate_measurements.append(row_dict)
+
+        return pd.DataFrame.from_records(plate_measurements)  # type: ignore
