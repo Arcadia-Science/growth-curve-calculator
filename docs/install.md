@@ -13,17 +13,17 @@ growth-curve-calculator is hosted on the [Python Package Index (PyPI)](https://p
 
       .. code-block:: bash
 
-         pip install growth-curve-calculator
+         pip install git+https://github.com/Arcadia-Science/growth-curve-calculator.git
 
    .. tab:: **MacOS**
 
       .. code-block:: bash
 
-         pip install growth-curve-calculator
+         pip install git+https://github.com/Arcadia-Science/growth-curve-calculator.git
 
    .. tab:: **Windows**
 
       .. code-block:: bash
 
-         pip install growth-curve-calculator
+         pip install git+https://github.com/Arcadia-Science/growth-curve-calculator.git
 ```
