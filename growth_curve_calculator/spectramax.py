@@ -19,33 +19,13 @@ logger = logging.getLogger(__name__)
 class SpectraMaxXmlParser:
     """An XML parser for interpreting the output of the SpectraMax iD3 microplate reader.
 
-    The SpectraMax iD3 is a microplate reader designed for detecting and quantifying biological
-    and chemical reactions in multiwell plates. We use it in the lab for plate-based fluorescence
-    assays and optical density measurements. The plate reader outputs these measurements to an XML
-    file with a not-so-easy-to-read MS Excel schema, which is why this class exists -- it aims to
-    facilitate reading the measurements from plates in batch to aid in the downstream analysis and
-    visualization of excitation/emission profiles, growth curves, etc.
-
-    There are three known measurement "modes":
-        - Absorption (Abs): for absorption-based assays such as optical density.
-        - Fluorescence (Fl): for fluorescence-based assays.
-        - Luminescence (unknown flag): for luminescence assays.
-
-    There are also different measurement "types" that are compatible with each measurement mode.
-    The format of the XML data (which is annoying enough as is) depends on the measurement type
-    (but, thankfully, not also the mode). There are three known measurement types, each with a
-    corresponding parser:
-        - Single measurement (Endpoint): `_parse_endpoint_measurements()`
-        - Spectral scan (SpectrumScan): `_parse_spectrum_scan_measurements()`
-        - Timelapse (Kinetic): `_parse_kinetic_measurements()`
-
-    A typical plate reader experiment might involve multiple different measurement modes and
-    types that will all be written to a single XML file.
-
     Attributes:
         xml_filepath: File path to XML file.
         soup: A BeautifulSoup object representing the parsed XML file.
         datetime_format: Datetime format for `datetime.strptime`.
+
+    See also:
+        parse_spectramax_xml
     """
 
     def __init__(self, xml_filepath: Path | str) -> None:
@@ -85,54 +65,18 @@ class SpectraMaxXmlParser:
     def num_plates(self) -> int:
         return len(self.plate_names)
 
-    def parse(
-        self, plate_names: str | list[str] | None = None
-    ) -> MicroplateData | list[MicroplateData]:
+    def parse(self) -> list[MicroplateData]:
         """Parse the XML file and return a list of MicroplateData objects.
 
         This is the main entry point for parsing SpectraMax XML files. It processes the XML file
         and extracts plate measurements, converting them to MicroplateData objects containing
         structured data that can be easily analyzed.
 
-        Args:
-            plate_names: Optional name or list of names of specific plates to parse.
-                - If None, all plates will be parsed.
-                - If a string, only the matching plate will be returned.
-                - If a list of strings, only the matching plates will be returned.
-
         Returns:
             A list of MicroplateData objects representing the parsed plate measurements found in
-            the XML file. If plate_names is provided, the list will contain only the matching
-            plate(s) or be empty if no matches are found.
-
-        Examples:
-            >>> parser = SpectraMaxXmlParser("plate_data.xml")
-            >>> # Parse all plates
-            >>> all_plates = parser.parse()
-            >>> # Parse just one specific plate
-            >>> phaeo_plate = parser.parse(plate_names="Phaeo")
-            >>> # Parse multiple specific plates
-            >>> selected_plates = parser.parse(plate_names=["Phaeo", "Chlamy"])
+            the XML file.
         """
-        if plate_names is None:
-            # Parse all plates
-            return list(self.generate_plate_measurements())
-        else:
-            # Normalize input to a list
-            plate_names = [plate_names] if isinstance(plate_names, str) else plate_names
-
-            # Parse only the specified plates
-            matching_plates: list[MicroplateData] = []
-            for plate_data in self.generate_plate_measurements():
-                if plate_data.name in plate_names:
-                    matching_plates.append(plate_data)
-
-            if not matching_plates:
-                raise ValueError(f"No plate names matching {plate_names} were found.")
-            elif len(matching_plates) == 1:
-                return matching_plates[0]
-            else:
-                return matching_plates
+        return list(self.generate_plate_measurements())
 
     def generate_plate_measurements(self) -> Generator[MicroplateData, None, None]:
         """Generate MicroplateData objects from the XML file.
@@ -284,7 +228,7 @@ class SpectraMaxXmlParser:
                     plate_measurements_xml_rows.append(xml_row)
 
         # Extract certain fields from metadata
-        plate_name = metadata.get("Plate name")
+        plate_name = metadata.get("Plate name", "")
         read_time = metadata.get("Read Time")
         timestamp = (
             datetime.strptime(str(read_time), self.datetime_format)
@@ -500,3 +444,32 @@ class SpectraMaxXmlParser:
                     plate_measurements.append(row_dict)
 
         return pd.DataFrame.from_records(plate_measurements)  # type: ignore
+
+
+def parse_spectramax_xml(path: Path) -> list[MicroplateData]:
+    """An XML parser for interpreting the output of the SpectraMax iD3 microplate reader.
+
+    The SpectraMax iD3 is a microplate reader designed for detecting and quantifying biological
+    and chemical reactions in multiwell plates. We use it in the lab for plate-based fluorescence
+    assays and optical density measurements. The plate reader outputs these measurements to an XML
+    file with a not-so-easy-to-read MS Excel schema, which is why this function exists -- it aims to
+    facilitate reading the measurements from plates in batch to aid in the downstream analysis and
+    visualization of excitation/emission profiles, growth curves, etc.
+
+    There are three known measurement "modes":
+        - Absorption (Abs): for absorption-based assays such as optical density.
+        - Fluorescence (Fl): for fluorescence-based assays.
+        - Luminescence (unknown flag): for luminescence assays.
+
+    There are also different measurement "types" that are compatible with each measurement mode.
+    The format of the XML data (which is annoying enough as is) depends on the measurement type
+    (but, thankfully, not also the mode). There are three known measurement types, each with a
+    corresponding parser:
+        - Single measurement (Endpoint): `_parse_endpoint_measurements()`
+        - Spectral scan (SpectrumScan): `_parse_spectrum_scan_measurements()`
+        - Timelapse (Kinetic): `_parse_kinetic_measurements()`
+
+    A typical plate reader experiment might involve multiple different measurement modes and
+    types that will all be written to a single XML file.
+    """
+    return SpectraMaxXmlParser(path).parse()

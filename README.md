@@ -20,26 +20,26 @@ pip install git+https://github.com/Arcadia-Science/growth-curve-calculator.git
 ### Parsing SpectraMax XML Files
 
 ```python
-from growth_curve_calculator import SpectraMaxXmlParser
+>>> from growth_curve_calculator import SpectraMaxXmlParser
 
 # Parse an XML file
-xml_filepath = "growth_curve_calculator/tests/example_data/sample_endpoints_1.xml"
-parser = SpectraMaxXmlParser(xml_filepath)
+>>> xml_filepath = "growth_curve_calculator/tests/example_data/sample_endpoints_1.xml"
+>>> parser = SpectraMaxXmlParser(xml_filepath)
 
 # Get names of all plates in the file
 >>> parser.plate_names
 ['Chlamy', 'Phaeo']
 
 # Parse all plates in the file
-all_plates = parser.parse()
+>>> all_plates = parser.parse()
 
 # Parse only a specific plate by name
-phaeo_plate = parser.parse(plate_names="Phaeo")
+>>> phaeo_plate = parser.parse(plate_names="Phaeo")
 >>> phaeo_plate.name
 'Phaeo'
 
 # Parse multiple specific plates by name
-selected_plates = parser.parse(plate_names=["Chlamy", "Phaeo"])
+>>> selected_plates = parser.parse(plate_names=["Chlamy", "Phaeo"])
 >>> len(selected_plates)
 2
 >>> [plate.name for plate in selected_plates]
@@ -50,7 +50,7 @@ selected_plates = parser.parse(plate_names=["Chlamy", "Phaeo"])
 
 ```python
 # Access the first plate's data
-plate = all_plates[0]
+>>> plate = all_plates[0]
 
 # View plate metadata
 >>> plate.name
@@ -74,7 +74,7 @@ plate = all_plates[0]
 }
 
 # Access measurement data (pandas DataFrame)
-measurements_df = plate.measurements
+>>> measurements_df = plate.measurements
 >>> measurements_df.head()
 
   well_row  well_column well_id  value  excitation_nm

@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..spectramax import SpectraMaxXmlParser
+from ..spectramax import parse_spectramax_xml
 
 
 def test_plate_names_sample_endpoints_1(valid_endpoint_xml_filepath_1):
@@ -8,19 +8,19 @@ def test_plate_names_sample_endpoints_1(valid_endpoint_xml_filepath_1):
         "Chlamy",
         "Phaeo",
     ]
-    parser = SpectraMaxXmlParser(valid_endpoint_xml_filepath_1)
-    parsed_plate_names = parser.plate_names
+    microplate_data_list = parse_spectramax_xml(valid_endpoint_xml_filepath_1)
+    parsed_plate_names = [plate.name for plate in microplate_data_list]
     assert known_plate_names == parsed_plate_names
 
 
-def test_plate_names_sample_kinetics(valid_kinetic_xml_filepath):
+def test_plate_names_kinetic_scans(valid_kinetic_xml_filepath):
     known_plate_names = [
         "Plate 1",
         "Plate 2",
         "Plate 3",
     ]
-    parser = SpectraMaxXmlParser(valid_kinetic_xml_filepath)
-    parsed_plate_names = parser.plate_names
+    microplate_data_list = parse_spectramax_xml(valid_kinetic_xml_filepath)
+    parsed_plate_names = [plate.name for plate in microplate_data_list]
     assert known_plate_names == parsed_plate_names
 
 
@@ -44,26 +44,15 @@ def test_plate_names_sample_spectrum_scans(valid_spectrum_scan_xml_filepath):
         "day4pla2",
         "od600",
     ]
-    parser = SpectraMaxXmlParser(valid_spectrum_scan_xml_filepath)
-    parsed_plate_names = parser.plate_names
-    assert known_plate_names == parsed_plate_names
-
-
-def test_plate_names_kinetic_scans(valid_kinetic_xml_filepath):
-    known_plate_names = [
-        "Plate 1",
-        "Plate 2",
-        "Plate 3",
-    ]
-    parser = SpectraMaxXmlParser(valid_kinetic_xml_filepath)
-    parsed_plate_names = parser.plate_names
+    microplate_data_list = parse_spectramax_xml(valid_spectrum_scan_xml_filepath)
+    parsed_plate_names = [plate.name for plate in microplate_data_list]
     assert known_plate_names == parsed_plate_names
 
 
 def test_absorption_endpoint_plate_data(valid_endpoint_xml_filepath_1):
-    parser = SpectraMaxXmlParser(valid_endpoint_xml_filepath_1)
-    plate_data = parser.parse("Chlamy")
-    parsed_measurements = plate_data.measurements  # type: ignore
+    microplate_data_list = parse_spectramax_xml(valid_endpoint_xml_filepath_1)
+    microplate_data = next(plate for plate in microplate_data_list if plate.name == "Chlamy")
+    parsed_measurements = microplate_data.measurements  # type: ignore
 
     # Test that parsed excitation wavelength is correct
     known_excitation_wavelength_nm = 750
@@ -89,9 +78,9 @@ def test_absorption_endpoint_plate_data(valid_endpoint_xml_filepath_1):
 
 
 def test_fluorescence_endpoint_plate_data(valid_spectrum_scan_xml_filepath):
-    parser = SpectraMaxXmlParser(valid_spectrum_scan_xml_filepath)
-    plate_data = parser.parse("day3pla2")
-    parsed_measurements = plate_data.measurements  # type: ignore
+    microplate_data_list = parse_spectramax_xml(valid_spectrum_scan_xml_filepath)
+    microplate_data = next(plate for plate in microplate_data_list if plate.name == "day3pla2")
+    parsed_measurements = microplate_data.measurements  # type: ignore
 
     # Test that parsed wavelengths are correct
     known_excitation_wavelengths_nm = [485, 561]
@@ -126,9 +115,9 @@ def test_fluorescence_endpoint_plate_data(valid_spectrum_scan_xml_filepath):
 
 
 def test_excitation_spectrum_scan_plate_data(valid_spectrum_scan_xml_filepath):
-    parser = SpectraMaxXmlParser(valid_spectrum_scan_xml_filepath)
-    plate_data = parser.parse("day7pla1EX")
-    parsed_measurements = plate_data.measurements  # type: ignore
+    microplate_data_list = parse_spectramax_xml(valid_spectrum_scan_xml_filepath)
+    microplate_data = next(plate for plate in microplate_data_list if plate.name == "day7pla1EX")
+    parsed_measurements = microplate_data.measurements  # type: ignore
 
     # Test that parsed excitation wavelengths are correct
     known_excitation_wavelengths_nm = np.arange(350, 520 + 1, 10)
@@ -154,9 +143,9 @@ def test_excitation_spectrum_scan_plate_data(valid_spectrum_scan_xml_filepath):
 
 
 def test_emission_spectrum_scan_plate_data(valid_spectrum_scan_xml_filepath):
-    parser = SpectraMaxXmlParser(valid_spectrum_scan_xml_filepath)
-    plate_data = parser.parse("day7pla1EM")
-    parsed_measurements = plate_data.measurements  # type: ignore
+    microplate_data_list = parse_spectramax_xml(valid_spectrum_scan_xml_filepath)
+    microplate_data = next(plate for plate in microplate_data_list if plate.name == "day7pla1EM")
+    parsed_measurements = microplate_data.measurements  # type: ignore
 
     # Test that parsed emission wavelengths are correct
     known_emission_wavelengths_nm = np.arange(480, 650 + 1, 10)
@@ -182,9 +171,9 @@ def test_emission_spectrum_scan_plate_data(valid_spectrum_scan_xml_filepath):
 
 
 def test_absorption_kinetic_plate_data(valid_kinetic_xml_filepath):
-    parser = SpectraMaxXmlParser(valid_kinetic_xml_filepath)
-    plate_data = parser.parse("Plate 2")
-    parsed_measurements = plate_data.measurements  # type: ignore
+    microplate_data_list = parse_spectramax_xml(valid_kinetic_xml_filepath)
+    microplate_data = next(plate for plate in microplate_data_list if plate.name == "Plate 2")
+    parsed_measurements = microplate_data.measurements  # type: ignore
 
     # Test that parsed time points are correct
     known_time_points_s = np.arange(0, 180 + 1, 30)
