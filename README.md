@@ -1,58 +1,118 @@
-# growth-curve-calculator
+# Growth Curve Calculator
 
-This repo contains a Python package called `growth_curve_calculator`, the main purpose of which is to facilitate visualizing growth curves of cell cultures from optical density measurements.
+This Python package facilitates parsing, analyzing, and visualizing microplate reader data, with a focus on growth curves generated from optical density measurements.
 
-Currently only supports parsing optical density measurements from the SpectraMax iD3.
+Currently supports parsing data from the SpectraMax iD3 microplate reader, including:
+- Endpoint measurements (single time point readings)
+- Spectrum scans (wavelength sweeps)
+- Kinetic measurements (time series data)
 
 ## Installation
 
-Clone the repository and install via pip:
+Install via pip:
 ```bash
-git clone https://github.com/Arcadia-Science/growth-curve-calculator.git
-cd growth-curve-calculator
-pip install -e .
+pip install git+https://github.com/Arcadia-Science/growth-curve-calculator.git
 ```
 
-<!-- The package is hosted on PyPI and can be installed using pip:
-
-```bash
-pip install growth-curve-calculator
-``` -->
 
 ## Usage
 
-Read a SpectraMax XML file:
-```python
-from growth_curve_calculator import SpectraMaxData
+### Parsing SpectraMax XML Files
 
-xml_filepath = (
-    "growth_curve_calculator/tests/example_data/"
-    "Public_New ABS Protocol9_6_2024 10_54_51 PM_9_6_2024 10_53_28 PM.xml"
-)
-plate_reader = SpectraMaxData.from_xml(xml_filepath)
+```python
+>>> from growth_curve_calculator import SpectraMaxXmlParser
+
+# Parse an XML file
+>>> xml_filepath = "growth_curve_calculator/tests/example_data/sample_endpoints_1.xml"
+>>> parser = SpectraMaxXmlParser(xml_filepath)
+
+# Get names of all plates in the file
+>>> parser.plate_names
+['Chlamy', 'Phaeo']
+
+# Parse all plates in the file
+>>> all_plates = parser.parse()
+
+# Parse only a specific plate by name
+>>> phaeo_plate = parser.parse(plate_names="Phaeo")
+>>> phaeo_plate.name
+'Phaeo'
+
+# Parse multiple specific plates by name
+>>> selected_plates = parser.parse(plate_names=["Chlamy", "Phaeo"])
+>>> len(selected_plates)
+2
+>>> [plate.name for plate in selected_plates]
+['Chlamy', 'Phaeo']
 ```
 
-Example output:
+### Working with Plate Data
+
 ```python
-# get the names of each plate measured
->>> plate_reader.plate_names
-['Phaeo', 'Isochrysis', 'Tetraselmis', 'Dunaliella']
+# Access the first plate's data
+>>> plate = all_plates[0]
 
-# get the times at which each plate was measured
->>> plate_reader.read_times
-[Timestamp('2024-09-06 22:47:13'),  # Phaeo
- Timestamp('2024-09-06 22:49:53'),  # Isochrysis
- Timestamp('2024-09-06 22:51:40'),  # Tetraselmis
- Timestamp('2024-09-06 22:53:41')]  # Dunaliella
+# View plate metadata
+>>> plate.name
+'Chlamy'
 
-# get the optical density measurements of a plate as a pandas DataFrame
->>> plate_reader.plate_measurements["Dunaliella"]
-       1      2      3      4
-A  0.411  0.351  0.366  0.400
-B  0.320  0.326  0.372  0.311
-C  0.438  0.347    NaN  0.355
-D  0.331  0.473  0.931  0.758
+>>> print(plate.timestamp)
+2024-08-06 22:19:29
+
+>>> plate.plate_type
+<PlateType.PLATE_96: 96>
+
+>>> plate.metadata
+{'Plate  (1 of 2)': '',
+ 'Plate name': 'Chlamy',
+ 'Barcode': '',
+ 'Microplate name': 'Standard clrbtm',
+ 'Rows': '8',
+ 'Columns': '12',
+ 'Well count': '96 Wells',
+ ...
+}
+
+# Access measurement data (pandas DataFrame)
+>>> measurements_df = plate.measurements
+>>> measurements_df.head()
+
+  well_row  well_column well_id  value  excitation_nm
+1        A            6     A06  0.050          750.0
+2        A            7     A07  0.040          750.0
+3        A            8     A08  0.042          750.0
+4        A            9     A09  1.063          750.0
+6        B            6     B06  0.134          750.0
 ```
+
+### Working with Spectrum Scan Data
+
+```python
+from growth_curve_calculator import SpectraMaxXmlParser
+import matplotlib.pyplot as plt
+
+# Parse a spectrum scan file
+spectrum_file = "growth_curve_calculator/tests/example_data/sample_spectrum_scans.xml"
+parser = SpectraMaxXmlParser(spectrum_file)
+plate_data = parser.parse("day7pla1EX")
+
+# Filter measurements to a particular well
+well_id = "A01"
+well_data = plate_data.measurements.query("well_id == @well_id")
+
+# Plot excitation spectrum
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.plot(well_data["excitation_nm"], well_data["value"])
+
+# Aesthetics
+ax.fill_between(well_data["excitation_nm"], well_data["value"], alpha=0.1)
+ax.set_xlabel("Excitation Wavelength (nm)")
+ax.set_ylabel("Fluorescence Intensity")
+ax.set_title(f"Excitation Spectrum for Well {well_id}")
+```
+
+<image src="docs/_assets/readme_excitation_spectrum.png" width="512"></image>
+
 
 ## Contributing
 
