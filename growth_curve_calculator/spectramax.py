@@ -20,7 +20,6 @@ class SpectraMaxXmlParser:
     """An XML parser for interpreting the output of the SpectraMax iD3 microplate reader.
 
     Attributes:
-        xml_filepath: File path to XML file.
         soup: A BeautifulSoup object representing the parsed XML file.
         datetime_format: Datetime format for `datetime.strptime`.
 
@@ -28,16 +27,29 @@ class SpectraMaxXmlParser:
         parse_spectramax_xml
     """
 
-    def __init__(self, xml_filepath: Path | str) -> None:
-        """Initialize the SpectraMaxXmlParser with a file path to an XML file.
+    def __init__(self, soup: BeautifulSoup) -> None:
+        """Initialize the SpectraMaxXmlParser with a BeautifulSoup object.
+
+        Args:
+            soup: A BeautifulSoup object representing the parsed XML file.
+        """
+        self.soup = soup
+        self.datetime_format = "%m/%d/%Y %H:%M:%S"
+
+    @classmethod
+    def from_xml_path(cls, xml_filepath: Path | str) -> SpectraMaxXmlParser:
+        """Create a SpectraMaxXmlParser from an XML file path.
 
         Args:
             xml_filepath: File path to the XML file output by the SpectraMax iD3 plate reader.
+
+        Returns:
+            A SpectraMaxXmlParser instance initialized with the parsed XML file.
         """
-        self.xml_filepath = Path(xml_filepath)
-        xml_text = self.xml_filepath.read_text()
-        self.soup = BeautifulSoup(xml_text, features="xml")
-        self.datetime_format = "%m/%d/%Y %H:%M:%S"
+        xml_filepath = Path(xml_filepath)
+        xml_text = xml_filepath.read_text()
+        soup = BeautifulSoup(xml_text, features="xml")
+        return cls(soup)
 
     @property
     def plate_names(self) -> list[str]:
@@ -472,4 +484,4 @@ def parse_spectramax_xml(path: Path) -> list[MicroplateData]:
     A typical plate reader experiment might involve multiple different measurement modes and
     types that will all be written to a single XML file.
     """
-    return SpectraMaxXmlParser(path).parse()
+    return SpectraMaxXmlParser.from_xml_path(path).parse()
