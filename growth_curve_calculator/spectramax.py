@@ -55,9 +55,9 @@ class SpectraMaxXmlParser:
         _plate_names = [
             re.sub("\n+", "\n", xml_row.text.strip().split("\n")[-1])
             for xml_row in xml_rows
-            if xml_row.find("ss:Cell")
-            and xml_row.find("ss:Data")
-            and xml_row.find("ss:Data").text == "Plate name"
+            if xml_row.find("ss:Cell")  # type: ignore
+            and xml_row.find("ss:Data")  # type: ignore
+            and xml_row.find("ss:Data").text == "Plate name"  # type: ignore
         ]
         return _plate_names
 
@@ -119,9 +119,9 @@ class SpectraMaxXmlParser:
         plate_name_rows = [
             xml_row
             for xml_row in xml_rows
-            if xml_row.find("ss:Cell")
-            and xml_row.find("ss:Data")
-            and xml_row.find("ss:Data").text == "Plate name"
+            if xml_row.find("ss:Cell")  # type: ignore
+            and xml_row.find("ss:Data")  # type: ignore
+            and xml_row.find("ss:Data").text == "Plate name"  # type: ignore
         ]
 
         lists_of_plate_reader_xml: list[list[Tag | None]] = []
@@ -144,8 +144,8 @@ class SpectraMaxXmlParser:
 
             # Get the xml from an individual plate read
             plate_reader_xml = self._extract_plate_reader_xml(
-                start_row=header_row,
-                end_row=end_row,
+                start_row=header_row,  # type: ignore
+                end_row=end_row,  # type: ignore
                 read_last_row=read_last_row,
             )
             lists_of_plate_reader_xml.append(plate_reader_xml)
@@ -286,9 +286,9 @@ class SpectraMaxXmlParser:
         for xml_row in plate_measurements_xml_rows:
             # Align xml data with indices
             row_str_data = [re.sub("\n", "", cell.text) for cell in xml_row.find_all("Cell")]
-            row_str_indices = [cell.attrs.get("ss:Index") for cell in xml_row.find_all("Cell")]
-            start = int(row_str_indices[0]) if row_str_indices[0] is not None else 0
-            row_int_indices = forward_fill_indices(row_str_indices, start=start)
+            row_str_indices = [cell.attrs.get("ss:Index") for cell in xml_row.find_all("Cell")]  # type: ignore
+            start = int(row_str_indices[0]) if row_str_indices[0] is not None else 0  # type: ignore
+            row_int_indices = forward_fill_indices(row_str_indices, start=start)  # type: ignore
 
             # "Wavelength(Ex/Em)" indicates header row containing excitation/emission data as well
             # as the columns of the wells
@@ -366,9 +366,9 @@ class SpectraMaxXmlParser:
         for xml_row in plate_measurements_xml_rows:
             # Align xml data with indices
             row_str_data = [re.sub("\n", "", cell.text) for cell in xml_row.find_all("Cell")]
-            row_str_indices = [cell.attrs.get("ss:Index") for cell in xml_row.find_all("Cell")]
-            start = int(row_str_indices[0]) if row_str_indices[0] is not None else 0
-            row_int_indices = forward_fill_indices(row_str_indices, start=start)
+            row_str_indices = [cell.attrs.get("ss:Index") for cell in xml_row.find_all("Cell")]  # type: ignore
+            start = int(row_str_indices[0]) if row_str_indices[0] is not None else 0  # type: ignore
+            row_int_indices = forward_fill_indices(row_str_indices, start=start)  # type: ignore
 
             # "Wavelength/Well" indicates header row containing well IDs
             if "Wavelength/Well" in row_str_data:
@@ -412,9 +412,9 @@ class SpectraMaxXmlParser:
         for xml_row in plate_measurements_xml_rows:
             # Align xml data with indices
             row_str_data = [re.sub("\n", "", cell.text) for cell in xml_row.find_all("Cell")]
-            row_str_indices = [cell.attrs.get("ss:Index") for cell in xml_row.find_all("Cell")]
-            start = int(row_str_indices[0]) if row_str_indices[0] is not None else 0
-            row_int_indices = forward_fill_indices(row_str_indices, start=start)
+            row_str_indices = [cell.attrs.get("ss:Index") for cell in xml_row.find_all("Cell")]  # type: ignore
+            start = int(row_str_indices[0]) if row_str_indices[0] is not None else 0  # type: ignore
+            row_int_indices = forward_fill_indices(row_str_indices, start=start)  # type: ignore
 
             # "Cycle(Seconds)/Well" indicates header row containing well IDs
             if "Cycle(Seconds)/Well" in row_str_data:
