@@ -2,5 +2,7 @@
 
 ```{eval-rst}
 .. nbgallery::
-   example.ipynb
+   basic_usage.ipynb
+   basic_plotting.ipynb
+   basic_plotly.ipynb
 ```

@@ -20,42 +20,33 @@ pip install git+https://github.com/Arcadia-Science/growth-curve-calculator.git
 ### Parsing SpectraMax XML Files
 
 ```python
->>> from growth_curve_calculator import SpectraMaxXmlParser
+>>> from growth_curve_calculator import parse_spectramax_xml
 
-# Parse an XML file
+# Extract plate reader data from an XML file
 >>> xml_filepath = "growth_curve_calculator/tests/example_data/sample_endpoints_1.xml"
->>> parser = SpectraMaxXmlParser(xml_filepath)
+>>> plate_data_list = parse_spectramax_xml(xml_filepath)
 
-# Get names of all plates in the file
->>> parser.plate_names
-['Chlamy', 'Phaeo']
-
-# Parse all plates in the file
->>> all_plates = parser.parse()
-
-# Parse only a specific plate by name
->>> phaeo_plate = parser.parse(plate_names="Phaeo")
->>> phaeo_plate.name
-'Phaeo'
-
-# Parse multiple specific plates by name
->>> selected_plates = parser.parse(plate_names=["Chlamy", "Phaeo"])
->>> len(selected_plates)
+# Number of plate reader runs
+>>> len(plate_data_list)
 2
->>> [plate.name for plate in selected_plates]
+
+# Get names of plates in the file
+>>> [plate.name for plate in plate_data_list]
 ['Chlamy', 'Phaeo']
 ```
 
-### Working with Plate Data
+### Working with `MicroplateData`
 
 ```python
+>>> type(plate)
+growth_curve_calculator.microplate.MicroplateData
+
 # Access the first plate's data
->>> plate = all_plates[0]
+>>> plate = plate_data_list[0]
 
 # View plate metadata
 >>> plate.name
 'Chlamy'
-
 >>> print(plate.timestamp)
 2024-08-06 22:19:29
 
@@ -74,8 +65,8 @@ pip install git+https://github.com/Arcadia-Science/growth-curve-calculator.git
 }
 
 # Access measurement data (pandas DataFrame)
->>> measurements_df = plate.measurements
->>> measurements_df.head()
+>>> dataframe = plate.measurements
+>>> dataframe.head()
 
   well_row  well_column well_id  value  excitation_nm
 1        A            6     A06  0.050          750.0
@@ -85,20 +76,25 @@ pip install git+https://github.com/Arcadia-Science/growth-curve-calculator.git
 6        B            6     B06  0.134          750.0
 ```
 
-### Working with Spectrum Scan Data
+### Working with spectral data
 
 ```python
-from growth_curve_calculator import SpectraMaxXmlParser
 import matplotlib.pyplot as plt
+from growth_curve_calculator import parse_spectramax_xml
 
 # Parse a spectrum scan file
 spectrum_file = "growth_curve_calculator/tests/example_data/sample_spectrum_scans.xml"
-parser = SpectraMaxXmlParser(spectrum_file)
-plate_data = parser.parse("day7pla1EX")
+plate_data_list = parse_spectramax_xml(spectrum_file)
+
+# Filter to known plate reader run
+run_name = "day7pla1EX"
+names = [plate.name for plate in plate_data_list]
+run_index = names.index(run_name)
+plate = plate_data_list[run_index]
 
 # Filter measurements to a particular well
 well_id = "A01"
-well_data = plate_data.measurements.query("well_id == @well_id")
+well_data = plate.measurements.query("well_id == @well_id")
 
 # Plot excitation spectrum
 fig, ax = plt.subplots(figsize=(8, 4))
